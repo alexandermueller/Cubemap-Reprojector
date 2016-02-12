@@ -55,5 +55,5 @@ for folder in posns.keys():
     final.paste(face, (posns[folder][0] * faceW, posns[folder][1] * faceH))
 
 
-final.save('./Cubemap/FinalCubemap.png')
+final.save('./FinalHorizontalCross.png')
 print "Finished!"
