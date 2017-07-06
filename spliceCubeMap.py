@@ -20,11 +20,11 @@ for r in xrange(100,-1,-1):
 posns        = {'front' : [1, 1], 'left' : [0, 1], 'right' : [2, 1], 'back' : [3, 1], 'top' : [1, 0], 'bottom' : [1, 2]}
 final        = 0
 faceW, faceH = (0, 0)
-
+faceLength   = 0
 
 for folder in posns.keys():
     p, d, files = os.walk("./Cubemap/%s/%s/" % (folder, resolution)).next()
-    faceLength  = int(math.sqrt(len(files)))
+    faceLength  = int(math.sqrt(len(files))) if faceLength == 0 else faceLength
     bottomImage = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, 0, faceLength - 1)).convert("RGBA")
     rightImage  = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, faceLength - 1, 0)).convert("RGBA")
 
