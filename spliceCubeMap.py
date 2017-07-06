@@ -6,7 +6,7 @@ import os, math
 test       = 0
 resolution = 0
 
-for r in xrange(20,-1,-1):
+for r in xrange(100,-1,-1):
     try:
         fileName   = "./Cubemap/back/%s/%d_%d.jpg" % (r, 0, 0)
         test       = Image.open(fileName).convert("RGBA")
@@ -23,22 +23,21 @@ faceW, faceH = (0, 0)
 
 
 for folder in posns.keys():
-    p, d, files        = os.walk("./Cubemap/%s/%s/" % (folder, resolution)).next()
-    colCount, rowCount = (int(files[-1][0]) + 1, int(files[-1][2]) + 1)
-
-    bottomImage = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, 0, rowCount - 1)).convert("RGBA")
-    rightImage  = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, colCount - 1, 0)).convert("RGBA")
+    p, d, files = os.walk("./Cubemap/%s/%s/" % (folder, resolution)).next()
+    faceLength  = int(math.sqrt(len(files)))
+    bottomImage = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, 0, faceLength - 1)).convert("RGBA")
+    rightImage  = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, faceLength - 1, 0)).convert("RGBA")
 
     w, edgeH = bottomImage.size
     edgeW, h = rightImage.size
 
     if faceW == 0 and faceH == 0:
-        faceW, faceH = (w * (colCount - 1) + edgeW, h * (rowCount - 1) + edgeH)
+        faceW, faceH = (w * (faceLength - 1) + edgeW, h * (faceLength - 1) + edgeH)
     
     face = Image.new("RGBA", (faceW, faceH))
 
-    for i in xrange(0, colCount):
-        for j in xrange(0, rowCount):    
+    for i in xrange(0, faceLength):
+        for j in xrange(0, faceLength):    
             fileName = "./Cubemap/%s/%s/%d_%d.jpg" % (folder, resolution, i, j)
             current  = Image.open(fileName).convert("RGBA")
             x, y     = (w * i, h * j)
