@@ -16,11 +16,14 @@ def log(string, silent = False):
     logFile.write(string + '\n')
 
 def main(argc, argv):
-    if not os.path.isfile('./Cubemap/back'):
-        log('No proper cubemap found at ./Cubemap')
+    assetsFolder = 'assets'
+    cubemapFolder = '%s/cubemap' % assetsFolder
+
+    if not os.path.isfile('./%s/atlas.jpg' % cubemapFolder):
+        log('No proper cubemap found at ./%s' % cubemapFolder)
         return
 
-    subDirectories, directories, files = os.walk('./Cubemap/back').next()
+    subDirectories, directories, files = os.walk('./%s/back' % cubemapFolder).next()
     resolutions = [int(r) for r in directories]
     
     if len(resolutions) == 0:
@@ -37,7 +40,7 @@ def main(argc, argv):
     faceLength = 0
 
     for folder in posns.keys():
-        subDirectories, directories, files = os.walk("./Cubemap/%s/%s/" % (folder, resolution)).next()
+        subDirectories, directories, files = os.walk("./%s/%s/%s/" % (cubemapFolder, folder, resolution)).next()
         rows = 0
         columns = 0
         
@@ -49,8 +52,8 @@ def main(argc, argv):
                 columns += 1
 
         faceLength = max(rows, columns) if faceLength == 0 else faceLength
-        bottomImage = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, 0, rows - 1)).convert("RGBA")
-        rightImage  = Image.open('./Cubemap/%s/%s/%d_%d.jpg' % (folder, resolution, columns - 1, 0)).convert("RGBA")
+        bottomImage = Image.open('./%s/%s/%s/%d_%d.jpg' % (cubemapFolder, folder, resolution, 0, rows - 1)).convert("RGBA")
+        rightImage  = Image.open('./%s/%s/%s/%d_%d.jpg' % (cubemapFolder, folder, resolution, columns - 1, 0)).convert("RGBA")
 
         w, edgeH = bottomImage.size
         edgeW, h = rightImage.size
@@ -62,7 +65,7 @@ def main(argc, argv):
 
         for i in xrange(0, columns):
             for j in xrange(0, rows):    
-                fileName = "./Cubemap/%s/%s/%d_%d.jpg" % (folder, resolution, i, j)
+                fileName = "./%s/%s/%s/%d_%d.jpg" % (cubemapFolder, folder, resolution, i, j)
                 current = Image.open(fileName).convert("RGBA")
                 x, y = (w * i, h * j)
 
@@ -70,7 +73,7 @@ def main(argc, argv):
                 face.paste(current, (x, y))        
         
         log("Adding face....")
-        # face.save('./Cubemap/%s.png' % folder)
+        # face.save('./%s/%s.png' % (assetsFolder, folder))
         
         if final == 0:
             final = Image.new("RGBA", (faceW * 4, faceH * 3))
@@ -79,7 +82,7 @@ def main(argc, argv):
 
 
     if final != 0:
-        final.save('./FinalHorizontalCross.png')
+        final.save('./%s/horizontal_cross.png' % assetsFolder)
     else:
         log('Nothing to save!')
 
