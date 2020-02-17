@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
-from PIL import Image
-import os, math, sys
+#################################################################################################
+## Note, this code was heavily inspired by https://github.com/Mapiarz/CubemapToEquirectangular ##
+#################################################################################################
 
+from PIL import Image, ImageDraw
+import os, math, sys, multiprocessing, random
+
+Image.MAX_IMAGE_PIXELS = 1000000000                                                                                              
 logFileName = './log.txt'
 
 if os.path.isfile(logFileName):
@@ -10,81 +15,141 @@ if os.path.isfile(logFileName):
 
 logFile = open(logFileName, 'a')
 
+chunks = 6
+assetsFolder = 'assets'
+horizontalCrossesFolder = '%s/horizontal_crosses' % assetsFolder
+equirectanglesFolder = '%s/equirectangles' % assetsFolder
+
 def log(string, silent = False):
     if not silent: 
         print string
     logFile.write(string + '\n')
 
-def main(argc, argv):
-    assetsFolder = 'assets'
-    horizontalCrossFile = '%s/horizontal_cross.png' % assetsFolder
-
-    if not os.path.isfile(horizontalCrossFile):
-        log('No proper horizontal cross found at ./%s' % horizontalCrossFile)
-        return
-
-    subDirectories, directories, files = os.walk('./%s/back' % cubemapFolder).next()
-    resolutions = [int(r) for r in directories]
+def convert(args):
+    chunk, source, cubeFaceWidth, cubeFaceHeight = args
+    lastProgress = -1
+    width = cubeFaceWidth * 4
+    height = cubeFaceHeight * 2
+    chunkWidth = int(width / chunks)
+    total = chunkWidth * height
+    newImage = Image.new('RGBA', (chunkWidth, height))
+    draw = ImageDraw.Draw(newImage)
     
-    if len(resolutions) == 0:
-        log('Resolution could not be determined.')
-        return
+    for j in range(height):
+        # Rows start from the bottom
+        v = 1 - (float(j) / height)
+        theta = v * math.pi
 
-    resolution = max(resolutions)
-    log('Resolution level %d used.' % resolution)
+        for i in range(chunk * chunkWidth, (chunk + 1) * chunkWidth):
+            # Columns start from the left
+            u = float(i) / width
+            phi = u * 2 * math.pi 
 
-    posns = {'front' : [1, 1], 'left' : [0, 1], 'right' : [2, 1], 'back' : [3, 1], 'top' : [1, 0], 'bottom' : [1, 2]}
-    final = 0
-    faceW = 0
-    faceH = 0
-    faceLength = 0
+            # Unit Vector
+            x = math.sin(phi) * math.sin(theta) * -1
+            y = math.cos(theta)
+            z = math.cos(phi) * math.sin(theta) * -1
 
-    for folder in posns.keys():
-        subDirectories, directories, files = os.walk("./%s/%s/%s/" % (cubemapFolder, folder, resolution)).next()
-        rows = 0
-        columns = 0
+            a = max(abs(x), abs(y), abs(z))
+            
+            # Vector parallel to the unit vector that lies on one of the cube faces
+            xa = x / a
+            ya = y / a
+            za = z / a
+
+            xPixel = 0
+            yPixel = 0
+            xOffset = 0
+            yOffset = 0
+
+            if xa == 1: 
+                # Right face
+                xPixel = int((((za + 1.0) / 2.0) - 1.0) * cubeFaceWidth)
+                yPixel = int(((ya + 1.0) / 2.0) * cubeFaceHeight)
+                xOffset = 2 * cubeFaceWidth
+                yOffset = cubeFaceHeight
+            elif xa == -1: 
+                # Left face
+                xPixel = int(((za + 1.0) / 2.0) * cubeFaceWidth)
+                yPixel = int(((ya + 1.0) / 2.0) * cubeFaceHeight)
+                xOffset = 0
+                yOffset = cubeFaceHeight
+            elif ya == 1: 
+                # Up face 
+                xPixel = int(((xa + 1.0) / 2.0) * cubeFaceWidth)
+                yPixel = int((((za + 1.0) / 2.0) - 1.0) * cubeFaceHeight)
+                xOffset = cubeFaceWidth
+                yOffset = 2 * cubeFaceHeight
+            elif ya == -1: 
+                # Down face
+                xPixel = int(((xa + 1.0) / 2.0) * cubeFaceWidth)
+                yPixel = int(((za + 1.0) / 2.0) * cubeFaceHeight)
+                xOffset = cubeFaceWidth
+                yOffset = 0
+            elif za == 1: 
+                # Front face
+                xPixel = int(((xa + 1.0) / 2.0) * cubeFaceWidth)
+                yPixel = int(((ya + 1.0) / 2.0) * cubeFaceHeight)
+                xOffset = cubeFaceWidth
+                yOffset = cubeFaceHeight
+            elif za == -1: 
+                # Back face
+                xPixel = int((((xa + 1.0) / 2.0) - 1.0) * cubeFaceWidth)
+                yPixel = int(((ya + 1.0) / 2.0) * cubeFaceHeight)
+                xOffset = 3 * cubeFaceWidth
+                yOffset = cubeFaceHeight
+            else:
+                xPixel = 0
+                yPixel = 0
+                xOffset = 0
+                yOffset = 0
+
+            xPixel = abs(xPixel) + xOffset
+            yPixel = abs(yPixel) + yOffset
+                        
+            pixel = j * chunkWidth + i
+            progress = int((pixel * 100) / total)
+
+            if progress != lastProgress and progress % 5 == 0:
+                log('[Chunk %d @ %d Percent] - Writing pixel %d/%d (%d, %d)' % (chunk, progress, pixel, total, xPixel, yPixel))
+            
+            lastProgress = progress
+            draw.point((i - chunk * chunkWidth, j), source.getpixel((min(xPixel, source.width - 1), min(yPixel, source.height - 1))))
+
+    log('[Chunk %d @ %d Percent] - Finished' % (chunk, progress))
+    return (chunk, newImage)
+
+def main(argc, argv):
+    subDirectories, directories, files = os.walk('./%s/' % horizontalCrossesFolder).next()
+
+    for horizontalCross in files:
+        log('Opening horizontal cross file...')
+        source = Image.open('./%s/%s' % (horizontalCrossesFolder, horizontalCross)).convert('RGBA')
+        cubeFaceWidth = int(source.width / 4)
+        cubeFaceHeight = int(source.height / 3)
+        destination = Image.new('RGBA', (cubeFaceWidth * 4, cubeFaceHeight * 2))
+
+        results = []
+        pool = multiprocessing.Pool(processes = chunks)
+        r = pool.map_async(convert, [(chunk, source, cubeFaceWidth, cubeFaceHeight) for chunk in range(chunks)], callback = results.append)
+        r.wait()
         
-        for file in files:
-            column, row = file.split('.')[0].split('_')
-            if int(column) == 0:
-                rows += 1
-            if int(row) == 0:
-                columns += 1
+        if len(results) == 0:
+            log('Something went wrong with the multiprocessing for %s.' % horizontalCross)
+            return
 
-        faceLength = max(rows, columns) if faceLength == 0 else faceLength
-        bottomImage = Image.open('./%s/%s/%s/%d_%d.jpg' % (cubemapFolder, folder, resolution, 0, rows - 1)).convert("RGBA")
-        rightImage  = Image.open('./%s/%s/%s/%d_%d.jpg' % (cubemapFolder, folder, resolution, columns - 1, 0)).convert("RGBA")
+        results = results[0]
 
-        w, edgeH = bottomImage.size
-        edgeW, h = rightImage.size
+        for chunk, image in results:
+            log('Adding chunk %s...' % chunk)
+            # image.save('./%s/equirectangleFace%d.png' % (assetsFolder, chunk))
+            destination.paste(image, (chunk * image.width, 0))
 
-        if faceW == 0 and faceH == 0:
-            faceW, faceH = (w * (faceLength - 1) + edgeW, h * (faceLength - 1) + edgeH)
-        
-        face = Image.new("RGBA", (faceW, faceH))
+        if not os.path.isdir('./%s' % equirectanglesFolder):
+            os.makedirs('./%s' % equirectanglesFolder)
 
-        for i in xrange(0, columns):
-            for j in xrange(0, rows):    
-                fileName = "./%s/%s/%s/%d_%d.jpg" % (cubemapFolder, folder, resolution, i, j)
-                current = Image.open(fileName).convert("RGBA")
-                x, y = (w * i, h * j)
-
-                log("Adding: %s" % fileName)
-                face.paste(current, (x, y))        
-        
-        log("Adding face....")
-        # face.save('./%s/%s.png' % (assetsFolder, folder))
-        
-        if final == 0:
-            final = Image.new("RGBA", (faceW * 4, faceH * 3))
-
-        final.paste(face, (posns[folder][0] * faceW, posns[folder][1] * faceH))
-
-
-    if final != 0:
-        final.save('./%s/horizontal_cross.png' % assetsFolder)
-    else:
-        log('Nothing to save!')
+        log('Saving equirectangle file...')
+        destination.save('./%s/equirectangle_%s.tiff' % (equirectanglesFolder, horizontalCross.split('_')[-1]))
 
     log('Finished!')
     logFile.close()
