@@ -32,7 +32,7 @@ def convert(args):
     height = cubeFaceHeight * 2
     chunkWidth = int(width / chunks)
     total = chunkWidth * height
-    newImage = Image.new('RGBA', (chunkWidth, height))
+    newImage = Image.new('RGB', (chunkWidth, height))
     draw = ImageDraw.Draw(newImage)
     
     for j in range(height):
@@ -124,10 +124,10 @@ def main(argc, argv):
 
     for horizontalCross in files:
         log('Opening horizontal cross file...')
-        source = Image.open('./%s/%s' % (horizontalCrossesFolder, horizontalCross)).convert('RGBA')
+        source = Image.open('./%s/%s' % (horizontalCrossesFolder, horizontalCross)).convert('RGB')
         cubeFaceWidth = int(source.width / 4)
         cubeFaceHeight = int(source.height / 3)
-        destination = Image.new('RGBA', (cubeFaceWidth * 4, cubeFaceHeight * 2))
+        destination = Image.new('RGB', (cubeFaceWidth * 4, cubeFaceHeight * 2))
 
         results = []
         pool = multiprocessing.Pool(processes = chunks)
@@ -142,7 +142,7 @@ def main(argc, argv):
 
         for chunk, image in results:
             log('Adding chunk %s...' % chunk)
-            # image.save('./%s/equirectangleFace%d.png' % (assetsFolder, chunk))
+            # image.save('./%s/equirectangleFace%d.tiff' % (assetsFolder, chunk))
             destination.paste(image, (chunk * image.width, 0))
 
         if not os.path.isdir('./%s' % equirectanglesFolder):

@@ -41,28 +41,28 @@ def spliceFace(face):
                 columns += 1
     except:
         log('Face does not exist, creating empty face image.')
-        return (faceName, Image.new('RGBA', (0, 0))) 
+        return (faceName, Image.new('RGB', (0, 0))) 
 
     faceSideLength = max(rows, columns)
-    bottomImage = Image.open('./%s/%d_%d.jpg' % (face, 0, rows - 1)).convert('RGBA')
-    rightImage = Image.open('./%s/%d_%d.jpg' % (face, columns - 1, 0)).convert('RGBA')
+    bottomImage = Image.open('./%s/%d_%d.jpg' % (face, 0, rows - 1)).convert('RGB')
+    rightImage = Image.open('./%s/%d_%d.jpg' % (face, columns - 1, 0)).convert('RGB')
 
     w, edgeH = bottomImage.size
     edgeW, h = rightImage.size
     faceW, faceH = (w * (faceSideLength - 1) + edgeW, h * (faceSideLength - 1) + edgeH)
-    faceImage = Image.new('RGBA', (faceW, faceH))
+    faceImage = Image.new('RGB', (faceW, faceH))
 
     for i in xrange(0, columns):
         for j in xrange(0, rows):    
             fileName = './%s/%d_%d.jpg' % (face, i, j)
-            current = Image.open(fileName).convert('RGBA')
+            current = Image.open(fileName).convert('RGB')
             x, y = (w * i, h * j)
 
             log('Adding: %s' % fileName.split('/')[-1], silent = True)
             faceImage.paste(current, (x, y))        
     
     log('Finished splicing %s face...' % faceName)
-    # faceImage.save('./%s/%s.png' % (assetsFolder, faceName))
+    # faceImage.save('./%s/%s.tiff' % (assetsFolder, faceName))
     return (faceName, faceImage)
 
 def main(argc, argv):
@@ -79,7 +79,7 @@ def main(argc, argv):
             log('Resolution could not be determined for %s.' % cubemap)
             continue
 
-        resolution = min(resolutions)
+        resolution = max(resolutions)
         log('Resolution level %d used for %s.' % (resolution, cubemap))
 
         results = []
@@ -94,7 +94,7 @@ def main(argc, argv):
 
         results = results[0]
         faceW, faceH = max(map(lambda x: x[1].size, results))
-        horizontal_cross = Image.new('RGBA', (faceW * 4, faceH * 3))
+        horizontal_cross = Image.new('RGB', (faceW * 4, faceH * 3))
         
         for faceName, faceImage in results:
             log('Adding %s face to horizontal_cross...' % faceName)
@@ -104,7 +104,7 @@ def main(argc, argv):
             os.makedirs('./%s' % horizontalCrossesFolder)
 
         log('Saving horizontal cross...')
-        horizontal_cross.save('./%s/horizontal_cross_%s.png' % (horizontalCrossesFolder, cubemap))
+        horizontal_cross.save('./%s/horizontal_cross_%s.tiff' % (horizontalCrossesFolder, cubemap))
 
     log('Finished!')
     logFile.close()
