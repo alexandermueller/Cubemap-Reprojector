@@ -29,12 +29,13 @@ def spliceFace(face):
 
     rows = 0
     columns = 0
-    
+
     try: 
         subDirectories, directories, files = os.walk('./%s/' % face).next()
     
         for file in files:
             column, row = file.split('.')[0].split('_')
+            
             if int(column) == 0:
                 rows += 1
             if int(row) == 0:
@@ -49,20 +50,25 @@ def spliceFace(face):
 
     w, edgeH = bottomImage.size
     edgeW, h = rightImage.size
+ 
+    bottomImage.close()
+    rightImage.close()
+ 
     faceW, faceH = (w * (faceSideLength - 1) + edgeW, h * (faceSideLength - 1) + edgeH)
     faceImage = Image.new('RGB', (faceW, faceH))
 
     for i in xrange(0, columns):
         for j in xrange(0, rows):    
             fileName = './%s/%d_%d.jpg' % (face, i, j)
-            current = Image.open(fileName).convert('RGB')
+            image = Image.open(fileName).convert('RGB')
             x, y = (w * i, h * j)
 
             log('Adding: %s' % fileName.split('/')[-1], silent = True)
-            faceImage.paste(current, (x, y))        
+            faceImage.paste(image, (x, y))        
+            image.close()
     
     log('Finished splicing %s face...' % faceName)
-    # faceImage.save('./%s/%s.tiff' % (assetsFolder, faceName))
+    # faceImage.save('./%s/%s.jpg' % (assetsFolder, faceName))
     return (faceName, faceImage)
 
 def main(argc, argv):
@@ -84,10 +90,16 @@ def main(argc, argv):
 
         results = []
         faces = ['%s/%s/%d' % (cubemapFolder, face, resolution) for face in posns.keys()]
-        pool = multiprocessing.Pool(processes = len(faces))
-        r = pool.map_async(spliceFace, faces, callback = results.append)
-        r.wait()
         
+        try:
+            pool = multiprocessing.Pool(processes = len(faces))
+            r = pool.map_async(spliceFace, faces, callback = results.append)
+            r.wait()
+            pool.close()    
+        except:
+            log('Pool encountered a race condition, moving on to next file.')
+            results = []
+
         if len(results) == 0:
             log('Something went wrong with the multiprocessing for %s.' % cubemap)
             continue
@@ -99,12 +111,14 @@ def main(argc, argv):
         for faceName, faceImage in results:
             log('Adding %s face to horizontal_cross...' % faceName)
             horizontal_cross.paste(faceImage, (posns[faceName][0] * faceW, posns[faceName][1] * faceH))
+            faceImage.close()
 
         if not os.path.isdir('./%s' % horizontalCrossesFolder):
             os.makedirs('./%s' % horizontalCrossesFolder)
 
         log('Saving horizontal cross...')
-        horizontal_cross.save('./%s/horizontal_cross_%s.tiff' % (horizontalCrossesFolder, cubemap))
+        horizontal_cross.save('./%s/horizontal_cross_%s.jpg' % (horizontalCrossesFolder, cubemap))
+        horizontal_cross.close()
 
     log('Finished!')
     logFile.close()

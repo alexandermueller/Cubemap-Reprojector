@@ -7,7 +7,7 @@
 from PIL import Image, ImageDraw
 import os, math, sys, multiprocessing, random
 
-Image.MAX_IMAGE_PIXELS = 1000000000                                                                                              
+Image.MAX_IMAGE_PIXELS = 1000000000                                                                                           
 logFileName = './log.txt'
 
 if os.path.isfile(logFileName):
@@ -19,6 +19,7 @@ chunks = 6
 assetsFolder = 'assets'
 horizontalCrossesFolder = '%s/horizontal_crosses' % assetsFolder
 equirectanglesFolder = '%s/equirectangles' % assetsFolder
+source = 0
 
 def log(string, silent = False):
     if not silent: 
@@ -26,7 +27,8 @@ def log(string, silent = False):
     logFile.write(string + '\n')
 
 def convert(args):
-    chunk, source, cubeFaceWidth, cubeFaceHeight = args
+    global source
+    chunk, cubeFaceWidth, cubeFaceHeight = args
     lastProgress = -1
     width = cubeFaceWidth * 4
     height = cubeFaceHeight * 2
@@ -120,20 +122,26 @@ def convert(args):
     return (chunk, newImage)
 
 def main(argc, argv):
+    global source
     subDirectories, directories, files = os.walk('./%s/' % horizontalCrossesFolder).next()
 
     for horizontalCross in files:
-        log('Opening horizontal cross file...')
+        log('Opening horizontal cross file %s...' % horizontalCross)
         source = Image.open('./%s/%s' % (horizontalCrossesFolder, horizontalCross)).convert('RGB')
         cubeFaceWidth = int(source.width / 4)
         cubeFaceHeight = int(source.height / 3)
         destination = Image.new('RGB', (cubeFaceWidth * 4, cubeFaceHeight * 2))
-
         results = []
-        pool = multiprocessing.Pool(processes = chunks)
-        r = pool.map_async(convert, [(chunk, source, cubeFaceWidth, cubeFaceHeight) for chunk in range(chunks)], callback = results.append)
-        r.wait()
-        
+
+        try:    
+            pool = multiprocessing.Pool(processes = chunks)
+            r = pool.map_async(convert, [(chunk, cubeFaceWidth, cubeFaceHeight) for chunk in range(chunks)], callback = results.append)
+            r.wait()
+            pool.close()
+        except:
+            log('Pool encountered a race condition, moving on to next file.')
+            results = []
+
         if len(results) == 0:
             log('Something went wrong with the multiprocessing for %s.' % horizontalCross)
             return
@@ -144,12 +152,15 @@ def main(argc, argv):
             log('Adding chunk %s...' % chunk)
             # image.save('./%s/equirectangleFace%d.tiff' % (assetsFolder, chunk))
             destination.paste(image, (chunk * image.width, 0))
+            image.close()
 
         if not os.path.isdir('./%s' % equirectanglesFolder):
             os.makedirs('./%s' % equirectanglesFolder)
 
         log('Saving equirectangle file...')
-        destination.save('./%s/equirectangle_%s.tiff' % (equirectanglesFolder, horizontalCross.split('_')[-1]))
+        destination.save('./%s/equirectangle_%s.tiff' % (equirectanglesFolder, horizontalCross.split('_')[-1][:-4]))
+        destination.close()
+        source.close()
 
     log('Finished!')
     logFile.close()
