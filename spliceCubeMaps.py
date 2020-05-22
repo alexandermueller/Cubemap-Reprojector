@@ -81,6 +81,13 @@ def main(argc, argv):
     for cubemap in directories:
         cubemapFolder = '%s/%s/formats/cubemap' % (cubemapsFolder, cubemap)
 
+        for face in posns.keys():
+            faceFolder = '%s/%s' % (cubemapFolder, face)
+
+            if not os.path.isdir('./%s/' % faceFolder):
+                log('Expected a face folder for cubemap %s at ./%s/' % (cubemap, faceFolder))
+                exit()
+
         s, cubeMapDirectories, f = os.walk('./%s/front/' % cubemapFolder).next()
         resolutions = [int(r) for r in cubeMapDirectories]
 
