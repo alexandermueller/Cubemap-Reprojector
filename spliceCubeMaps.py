@@ -33,7 +33,7 @@ def spliceFace(face):
             if int(row) == 0:
                 columns += 1
     except:
-        log('Face does not exist, creating empty face image.')
+        log('Face does not exist, creating empty face image')
         return (faceName, Image.new('RGB', (0, 0))) 
 
     faceSideLength = max(rows, columns)
@@ -55,11 +55,11 @@ def spliceFace(face):
             image = Image.open(fileName).convert('RGB')
             x, y = (w * i, h * j)
 
-            log('Adding: %s' % fileName.split('/')[-1], silent = True)
+            log('Adding: %s...' % fileName.split('/')[-1], silent = True)
             faceImage.paste(image, (x, y))        
             image.close()
     
-    log('Finished splicing %s face...' % faceName)
+    log('Finished splicing %s face' % faceName)
     # faceImage.save('./%s/%s.jpg' % (assetsFolder, faceName))
     return (faceName, faceImage)
 
@@ -84,34 +84,47 @@ def main(argc, argv):
         for face in posns.keys():
             faceFolder = '%s/%s' % (cubemapFolder, face)
 
-            if not os.path.isdir('./%s/' % faceFolder):
-                log('Expected a face folder for cubemap %s at ./%s/' % (cubemap, faceFolder))
+            if not os.path.isdir('./%s' % faceFolder):
+                log('Expected a %s face folder for cubemap %s at ./%s/' % (face, cubemap, faceFolder))
                 exit()
 
+        log('Checking highest resolution level available for %s...' % cubemap)
         s, cubeMapDirectories, f = os.walk('./%s/front/' % cubemapFolder).next()
-        resolutions = [int(r) for r in cubeMapDirectories]
+        resolutions = sorted([int(r) for r in cubeMapDirectories], reverse = True)
+        maxResolution = 0
+        
+        for resolution in resolutions:
+            maxResolution = resolution
+            
+            for face in posns.keys():
+                if not os.path.isdir('./%s/%s/%d' % (cubemapFolder, face, resolution)):
+                    log('Face %s does not contain resolution level %d' % (face, resolution))
+                    maxResolution = 0
+                    break
 
-        if len(resolutions) == 0:
-            log('Resolution could not be determined for %s.' % cubemap)
+            if maxResolution != 0:
+                log('Maximum resolution shared between all face folders is %d' % maxResolution)
+                break
+
+        if maxResolution == 0 or len(resolutions) == 0:
+            log('Resolution could not be determined for %s' % cubemap)
             continue
 
-        resolution = max(resolutions)
-        log('Resolution level %d used for %s.' % (resolution, cubemap))
-
+        log('Using resolution level %d for %s' % (maxResolution, cubemap))
         results = []
-        faces = ['%s/%s/%d' % (cubemapFolder, face, resolution) for face in posns.keys()]
-        
+        faces = ['%s/%s/%d' % (cubemapFolder, face, maxResolution) for face in posns.keys()]
+
         try:
             pool = multiprocessing.Pool(processes = len(faces))
             r = pool.map_async(spliceFace, faces, callback = results.append)
             r.wait()
             pool.close()    
         except:
-            log('Pool encountered a race condition, moving on to next file.')
+            log('Pool encountered a race condition, moving on to next file')
             results = []
 
         if len(results) == 0:
-            log('Something went wrong with the multiprocessing for %s.' % cubemap)
+            log('Something went wrong with the multiprocessing for %s' % cubemap)
             continue
 
         results = results[0]
@@ -119,7 +132,7 @@ def main(argc, argv):
         horizontal_cross = Image.new('RGB', (faceW * 4, faceH * 3))
         
         for faceName, faceImage in results:
-            log('Adding %s face to horizontal_cross...' % faceName)
+            log('Adding %s face to horizontal cross...' % faceName)
             horizontal_cross.paste(faceImage, (posns[faceName][0] * faceW, posns[faceName][1] * faceH))
             faceImage.close()
 

@@ -19,7 +19,7 @@ cubemapsFolder = '%s/cubemaps' % assetsFolder
 
 def main(argc, argv):
 	global logFile
-	
+
 	if os.path.isfile(logFileName):
 		os.remove(logFileName)
 		logFile = open(logFileName, 'a')
@@ -34,7 +34,7 @@ def main(argc, argv):
 	    if '.pano' not in panorama:
 	    	continue
 
-	    log('Found .pano file %s...' % panorama)
+	    log('Found .pano file %s' % panorama)
 	    source = './%s/%s' % (panoramasFolder, panorama)
 	    destination = './%s/%s.zip' % (cubemapsFolder, panorama[:-5])
 
@@ -49,7 +49,7 @@ def main(argc, argv):
 	       	with zipfile.ZipFile(destination, 'r') as zip_ref:
 	       		zip_ref.extractall(destination[:-4])
 
-	       	log('Cleaning up %s' % destination)
+	       	log('Cleaning up %s...' % destination)
 	       	os.remove(destination)
 	    except:
 	    	log('Encountered an issue during the conversion process.')
