@@ -5,7 +5,7 @@ The panorama is now more useful to us, but not really that great to look at, whi
 
 **Requirements:**
 
-This script requires python 2, pip, and the pillow image library (or more commonly, PIL) installed in pip.
+This script requires python 2, pip, and the pillow image library (or more commonly, PIL) installed with pip.
 
 **Usage:**
 
