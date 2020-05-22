@@ -72,6 +72,7 @@ def spliceFace(face):
     return (faceName, faceImage)
 
 def main(argc, argv):
+    log('Splicing cubemaps:')
     posns = {'front' : [1, 1], 'left' : [0, 1], 'right' : [2, 1], 'back' : [3, 1], 'top' : [1, 0], 'bottom' : [1, 2]}
     subDirectories, directories, files = os.walk('./%s' % cubemapsFolder).next()
     

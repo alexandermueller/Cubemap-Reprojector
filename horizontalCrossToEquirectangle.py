@@ -125,9 +125,17 @@ def main(argc, argv):
     global source
     subDirectories, directories, files = os.walk('./%s/' % horizontalCrossesFolder).next()
 
+    log('Reprojecting horizontal cross files:')
+
     for horizontalCross in files:
         log('Opening horizontal cross file %s...' % horizontalCross)
-        source = Image.open('./%s/%s' % (horizontalCrossesFolder, horizontalCross)).convert('RGB')
+        
+        try:
+            source = Image.open('./%s/%s' % (horizontalCrossesFolder, horizontalCross)).convert('RGB')
+        except:
+            log('Invalid image file encountered. %s will be skipped.' % horizontalCross)
+            continue
+
         cubeFaceWidth = int(source.width / 4)
         cubeFaceHeight = int(source.height / 3)
         destination = Image.new('RGB', (cubeFaceWidth * 4, cubeFaceHeight * 2))
