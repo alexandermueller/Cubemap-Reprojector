@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
 import sys
+import convertPanos
 import spliceCubeMaps
 import horizontalCrossToEquirectangle
 
 def main(argc, argv):
+	convertPanos.main(0,[])
 	spliceCubeMaps.main(0,[])
 	horizontalCrossToEquirectangle.main(0,[])
 

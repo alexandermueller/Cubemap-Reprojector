@@ -1,3 +1,6 @@
 .DS_Store
 *.pyc
 log.txt
+assets/cubemaps/*
+assets/horizontal_crosses/*
+assets/equirectangles/*

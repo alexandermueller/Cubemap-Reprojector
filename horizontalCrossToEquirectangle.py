@@ -9,10 +9,6 @@ import os, math, sys, multiprocessing, random
 
 Image.MAX_IMAGE_PIXELS = 1000000000                                                                                           
 logFileName = './log.txt'
-
-if os.path.isfile(logFileName):
-    os.remove(logFileName)
-
 logFile = open(logFileName, 'a')
 
 chunks = 6
@@ -122,7 +118,16 @@ def convert(args):
     return (chunk, newImage)
 
 def main(argc, argv):
-    global source
+    global source, logFile
+    
+    if os.path.isfile(logFileName):
+        os.remove(logFileName)
+        logFile = open(logFileName, 'a')
+
+    if not os.path.isdir('./%s' % horizontalCrossesFolder):
+        log('No horizontal crosses folder found at ./%s' % horizontalCrossesFolder)
+        exit()
+
     subDirectories, directories, files = os.walk('./%s/' % horizontalCrossesFolder).next()
 
     log('Reprojecting horizontal cross files:')

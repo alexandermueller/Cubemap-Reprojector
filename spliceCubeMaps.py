@@ -4,10 +4,6 @@ from PIL import Image
 import os, math, sys, multiprocessing
 
 logFileName = './log.txt'
-
-if os.path.isfile(logFileName):
-    os.remove(logFileName)
-
 logFile = open(logFileName, 'a')
 
 def log(string, silent = False):
@@ -18,10 +14,6 @@ def log(string, silent = False):
 assetsFolder = 'assets'
 cubemapsFolder = '%s/cubemaps' % assetsFolder
 horizontalCrossesFolder = '%s/horizontal_crosses' % assetsFolder
-
-if not os.path.isdir('./%s' % cubemapsFolder):
-    log('No cubemaps folder found at ./%s' % cubemapsFolder)
-    exit()
 
 def spliceFace(face):
     faceName = face.split('/')[-2]
@@ -72,10 +64,20 @@ def spliceFace(face):
     return (faceName, faceImage)
 
 def main(argc, argv):
+    global logFile
+
+    if os.path.isfile(logFileName):
+        os.remove(logFileName)
+        logFile = open(logFileName, 'a')    
+
+    if not os.path.isdir('./%s' % cubemapsFolder):
+        log('No cubemaps folder found at ./%s' % cubemapsFolder)
+        exit()
+
     log('Splicing cubemaps:')
     posns = {'front' : [1, 1], 'left' : [0, 1], 'right' : [2, 1], 'back' : [3, 1], 'top' : [1, 0], 'bottom' : [1, 2]}
     subDirectories, directories, files = os.walk('./%s' % cubemapsFolder).next()
-    
+
     for cubemap in directories:
         cubemapFolder = '%s/%s/formats/cubemap' % (cubemapsFolder, cubemap)
 
