@@ -9,9 +9,11 @@ This script requires python 2, pip, and the pillow image library (or more common
 
 **Usage:**
 
-After cloning this project, place all panorama folders inside `/assets/cubemaps/`. 
-Due to the fact that .pano files are the intent for this project (so it's already pretty niche), I've supplied an example .pano file in the cubemaps folder to compare with. At the very least, the panoramas supplied should resemble the following 
-format: `PanoramaName/formats/cubemap/...`.
+After cloning this project, place all .pano files inside `/assets/panoramas/`.
+Due to the fact that .pano files are the intent for this project (so it's already pretty niche), I've supplied an example .pano file that can be extracted using the convertPanos.py script. Running this will extract the useful information from the .pano file into `/assets/cubemaps/`. 
 
-Run the runAll.py script to automate the entire process. Otherwise, first run the spliceCubeMaps.py script to convert the panorama cubemap folders into horizontal-cross images. The resulting images can be found inside `/assets/horizontal_crosses/`.
-Next, if horizontal-cross images aren't exactly what you're into (who can blame you), run the horizontalCrossToEquirectangle.py script to reproject all the horizontal-cross images inside `/assets/horizontal_crosses/` to equirectangle images. The new projections can be found inside `/assets/equirectangles/`.
+For those that would like to convert from cubemaps only, create the `/assets/cubemaps/` folder, or run the spliceCubeMaps.py script once to generate the folder (if it's missing.) Using the supplied Farm.pano file as an example, make sure the folder structure of your panorama looks similar to the resulting Farm panorama's cubemap folder (after running convertPanos.py first.) Your panorama cubemaps should at least have `/formats/cubemap/<front, left, back, bottom, right, top>/` present, along with numbered folders within them (resolution levels), with images inside them (`/formats/cubemap/front/13/<image files>`, for example.)
+
+For those that wish to convert horizontal cross images to equirectangle format, place the source images inside `/assets/horizontal_crosses/` and run the horizontalCrossToEquirectangle.py script. The resulting equirectangle files will be located inside `/assets/equirectangles/`.
+
+Run the runAll.py script to automate the entire process.
